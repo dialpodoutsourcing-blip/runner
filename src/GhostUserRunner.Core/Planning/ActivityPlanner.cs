@@ -125,8 +125,7 @@ public sealed class ActivityPlanner : IActivityPlanner
         var root = _options.AllowedFolderRoots[_random.NextInt(_options.AllowedFolderRoots.Count)];
         var parameters = new Dictionary<string, string>
         {
-            ["readingSeconds"] = (5 + _random.NextInt(16)).ToString(),
-            ["variation"] = _random.NextInt(10_000).ToString()
+            ["readingSeconds"] = (5 + _random.NextInt(16)).ToString()
         };
         if (Directory.Exists(root) && _random.NextDouble() < .5)
         {

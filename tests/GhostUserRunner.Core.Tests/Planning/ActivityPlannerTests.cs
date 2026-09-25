@@ -90,6 +90,7 @@ public sealed class ActivityPlannerTests
             var actions = Enumerable.Range(0, 30).Select(_ => planner.Next(new(true, "browser", null, null))).ToArray();
 
             Assert.Contains(actions, action => action.Kind == ActionKind.OpenFile && action.Target == safeFile);
+            Assert.All(actions, action => Assert.False(action.Parameters?.ContainsKey("variation")));
         }
         finally { Directory.Delete(root, true); }
     }
