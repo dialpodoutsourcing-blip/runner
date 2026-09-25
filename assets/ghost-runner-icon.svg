@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Ghost User Runner</title><desc id="desc">A friendly digital ghost with a motion trail</desc>
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#74e9ff"/><stop offset="1" stop-color="#7c6cff"/></linearGradient></defs>
+  <rect width="256" height="256" rx="58" fill="#091225"/><path d="M58 115c0-48 31-78 73-78s70 31 70 79v80l-24-16-22 19-24-19-24 19-22-19-27 17z" fill="url(#g)"/>
+  <circle cx="109" cy="112" r="10" fill="#091225"/><circle cx="159" cy="112" r="10" fill="#091225"/><path d="M111 148c14 10 31 10 45 0" fill="none" stroke="#091225" stroke-width="9" stroke-linecap="round"/>
+  <path d="M27 75h43M18 102h35M30 129h25" stroke="#74e9ff" stroke-width="9" stroke-linecap="round" opacity=".75"/>
+</svg>
