@@ -4,5 +4,5 @@
     <Content Include="..\..\config\appsettings.json" Link="config\appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\config\appsettings.example.json" Link="config\appsettings.example.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
-  <PropertyGroup><OutputType>WinExe</OutputType><TargetFramework>net8.0-windows</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
+  <PropertyGroup><OutputType>WinExe</OutputType><TargetFramework>net8.0-windows</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><ApplicationIcon>..\..\assets\GhostUserRunner.ico</ApplicationIcon></PropertyGroup>
 </Project>

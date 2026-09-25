@@ -1,0 +1,45 @@
+name: Build Windows installer
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Test
+        run: dotnet test GhostUserRunner.sln -c Release -v minimal
+      - name: Publish Windows app
+        run: dotnet publish src/GhostUserRunner.App/GhostUserRunner.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o artifacts/portable/GhostUserRunner
+      - name: Install Chromium
+        shell: pwsh
+        run: |
+          $env:PLAYWRIGHT_BROWSERS_PATH = '0'
+          & artifacts/portable/GhostUserRunner/playwright.ps1 install chromium
+      - name: Create checksums
+        shell: pwsh
+        run: |
+          $output = (Resolve-Path 'artifacts/portable/GhostUserRunner').Path
+          Get-ChildItem $output -File -Recurse | Get-FileHash -Algorithm SHA256 | ForEach-Object {
+            "{0}  {1}" -f $_.Hash, $_.Path.Substring($output.Length).TrimStart('\')
+          } | Set-Content (Join-Path $output 'SHA256SUMS.txt')
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+      - name: Build branded installer
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\GhostUserRunner.iss'
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Ghost User Runner ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            artifacts/installer/GhostUserRunner-Setup.exe
+            artifacts/portable/GhostUserRunner/SHA256SUMS.txt

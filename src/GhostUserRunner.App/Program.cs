@@ -19,7 +19,8 @@ app.MapPost("/api/session/run", async (RunRequest request, SessionService servic
 app.MapPost("/api/session/pause", async (SessionService service) => ToResult(await service.PauseAsync()));
 app.MapPost("/api/session/resume", (SessionService service) => ToResult(service.Resume()));
 app.MapPost("/api/session/stop", async (SessionService service) => ToResult(await service.StopAsync()));
-app.Lifetime.ApplicationStarted.Register(() => { try { Process.Start(new ProcessStartInfo("http://localhost:5000") { UseShellExecute = true }); } catch { } });
+var background = args.Contains("--background", StringComparer.OrdinalIgnoreCase);
+if (!background) app.Lifetime.ApplicationStarted.Register(() => { try { Process.Start(new ProcessStartInfo("http://localhost:5000") { UseShellExecute = true }); } catch { } });
 await app.RunAsync();
 static IResult ToResult(SessionCommandResult result) => result.Accepted ? Results.Ok(result) : Results.Conflict(result);
 public sealed record RunRequest(double? DurationHours, int? DiagnosticSeed);
