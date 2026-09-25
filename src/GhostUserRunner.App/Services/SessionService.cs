@@ -42,7 +42,7 @@ public sealed class SessionService(RunnerOptions options) : IAsyncDisposable
             var profile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GhostUserRunner", "BrowserProfile");
             _browser = new BrowserAdapter(options.AllowedDomains, profile, input, focus);
             _explorer = new FileExplorerAdapter(options.AllowedFolderRoots, options.AllowedExtensions, options.AllowedApplications, new ShellProcessLauncher(), focus);
-            var planner = new ActivityPlanner(options, random, new SearchTopicGenerator(["nature documentaries", "space exploration", "world history", "cooking techniques", "classical music", "technology news"]));
+            var planner = new ActivityPlanner(options, random, new SearchTopicGenerator(["nature documentaries", "space exploration", "world history", "cooking techniques", "classical music", "technology news"]), actualDuration);
             _controller = new SessionController(planner, new ActionPolicy(options), new CompositeActionExecutor(_browser, _explorer));
             _lifetime = new CancellationTokenSource();
             _run = RunOwnedAsync(new(actualDuration, actualSeed), _lifetime.Token);

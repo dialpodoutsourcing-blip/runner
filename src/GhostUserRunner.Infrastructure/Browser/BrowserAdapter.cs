@@ -90,7 +90,14 @@ public sealed class BrowserAdapter : IActionExecutor, IAsyncDisposable
         {
             await MarkOwnedPageAsync(cancellationToken);
             if (_focus is not null && !_focus.TryActivateBrowser(_windowMarker)) return new(false, "browser.focus_lost");
-            await _humanInput.ScrollAsync(-350, cancellationToken);
+            var scrollCount = GetBoundedParameter(action, "scrollCount", 2, 6, 3);
+            var initialDirection = action.Parameters?.GetValueOrDefault("scrollDirection") == "up" ? 1 : -1;
+            for (var index = 0; index < scrollCount; index++)
+            {
+                var direction = index % 3 == 2 ? -initialDirection : initialDirection;
+                await _humanInput.ScrollAsync(direction * (250 + Random.Shared.Next(301)), cancellationToken);
+                await Task.Delay(400 + Random.Shared.Next(1_101), cancellationToken);
+            }
         }
         else await _page.Mouse.WheelAsync(0, 350);
 
@@ -100,9 +107,16 @@ public sealed class BrowserAdapter : IActionExecutor, IAsyncDisposable
             if (await video.CountAsync().WaitAsync(cancellationToken) > 0 && !await ActivateAndClickAsync(video, cancellationToken)) return new(false, "browser.target_changed");
             if (!_policy.IsAllowed(_page.Url)) return new(false, "browser.redirect_denied");
         }
-        await Task.Delay(ActivityDwellTime.Choose(action.Kind, new SeededRandomSource(Random.Shared.Next())), cancellationToken);
+        var readingSeconds = GetBoundedParameter(action, "readingSeconds", 3, 30,
+            (int)ActivityDwellTime.Choose(action.Kind, new SeededRandomSource(Random.Shared.Next())).TotalSeconds);
+        await Task.Delay(TimeSpan.FromSeconds(readingSeconds), cancellationToken);
         return new(true, "browser.complete");
     }
+
+    private static int GetBoundedParameter(ProposedAction action, string name, int minimum, int maximum, int fallback) =>
+        action.Parameters?.TryGetValue(name, out var value) == true && int.TryParse(value, out var parsed)
+            ? Math.Clamp(parsed, minimum, maximum)
+            : fallback;
 
     private async Task<bool> ActivateAndClickAsync(ILocator locator, CancellationToken cancellationToken)
     {

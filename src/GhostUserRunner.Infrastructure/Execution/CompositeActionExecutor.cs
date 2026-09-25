@@ -5,9 +5,7 @@ namespace GhostUserRunner.Infrastructure.Execution;
 
 public sealed class CompositeActionExecutor(IActionExecutor browser, IActionExecutor explorer) : IActionExecutor
 {
-    private const int BrowserActionsPerWindow = 3;
     private WindowOwner _owner;
-    private int _browserActions;
 
     public ObservedContext Observe() => _owner == WindowOwner.Explorer ? explorer.Observe() : browser.Observe();
 
@@ -32,8 +30,9 @@ public sealed class CompositeActionExecutor(IActionExecutor browser, IActionExec
         var browserOutcome = await browser.ExecuteAsync(action, cancellationToken);
         _owner = WindowOwner.Browser;
         if (!browserOutcome.Succeeded) return browserOutcome;
-        _browserActions++;
-        if (_browserActions < BrowserActionsPerWindow) return browserOutcome;
+        var closeAfter = action.Parameters?.TryGetValue("closeAfter", out var value) == true &&
+            bool.TryParse(value, out var shouldClose) && shouldClose;
+        if (!closeAfter) return browserOutcome;
 
         var browserClosed = await CloseCurrentAsync(cancellationToken);
         return browserClosed.Succeeded ? browserOutcome : browserClosed;
@@ -47,7 +46,6 @@ public sealed class CompositeActionExecutor(IActionExecutor browser, IActionExec
         if (outcome.Succeeded)
         {
             _owner = WindowOwner.None;
-            _browserActions = 0;
         }
         return outcome;
     }

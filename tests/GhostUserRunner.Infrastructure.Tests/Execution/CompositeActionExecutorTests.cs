@@ -21,16 +21,18 @@ public sealed class CompositeActionExecutorTests
     }
 
     [Fact]
-    public async Task ClosesAndReopensBrowserAfterThreeActions()
+    public async Task ReusesBrowserUntilPreplannedCloseAction()
     {
         var browser = new RecordingExecutor("browser");
         var composite = new CompositeActionExecutor(browser, new RecordingExecutor("explorer"));
 
         for (var index = 0; index < 4; index++)
             await composite.ExecuteAsync(new(ActionKind.SearchWeb, "https://example.test"), CancellationToken.None);
+        await composite.ExecuteAsync(new(ActionKind.SearchWeb, "https://example.test",
+            new Dictionary<string, string> { ["closeAfter"] = "true" }), CancellationToken.None);
 
         Assert.Equal(
-            [ActionKind.SearchWeb, ActionKind.SearchWeb, ActionKind.SearchWeb, ActionKind.CloseWindow, ActionKind.SearchWeb],
+            [ActionKind.SearchWeb, ActionKind.SearchWeb, ActionKind.SearchWeb, ActionKind.SearchWeb, ActionKind.SearchWeb, ActionKind.CloseWindow],
             browser.Actions);
     }
 

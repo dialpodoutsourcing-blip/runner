@@ -17,7 +17,29 @@ public sealed class ActivityPlannerTests
         var firstActions = Enumerable.Range(0, 1_000).Select(_ => first.Next(context)).ToArray();
         var secondActions = Enumerable.Range(0, 1_000).Select(_ => second.Next(context)).ToArray();
 
-        Assert.Equal(firstActions, secondActions);
+        Assert.Equal(firstActions.Select(Signature), secondActions.Select(Signature));
+    }
+
+    [Fact]
+    public void BuildsCompleteProgramAtStartupWithoutAdjacentTemplateRepeats()
+    {
+        var planner = new ActivityPlanner(Options(), new SeededRandomSource(42),
+            new SearchTopicGenerator(["nature", "space", "history"]), TimeSpan.FromHours(8));
+
+        Assert.True(planner.PlannedActions.Count >= 8 * 60);
+        Assert.DoesNotContain(planner.PlannedActions.Zip(planner.PlannedActions.Skip(1)),
+            pair => pair.First.Kind == pair.Second.Kind);
+    }
+
+    [Fact]
+    public void ExactActivitySignatureDoesNotRepeatWithinTenMinutes()
+    {
+        var planner = new ActivityPlanner(Options(), new SeededRandomSource(17),
+            new SearchTopicGenerator(["nature", "space", "history"]), TimeSpan.FromHours(8));
+
+        var signatures = planner.PlannedActions.Select(action => $"{action.Kind}|{action.Target}|{string.Join(';', action.Parameters ?? new Dictionary<string, string>())}").ToArray();
+        for (var index = 0; index < signatures.Length; index++)
+            Assert.DoesNotContain(signatures[index], signatures.Skip(index + 1).Take(30));
     }
 
     [Fact]
@@ -91,6 +113,9 @@ public sealed class ActivityPlannerTests
     }
 
     private static ActivityPlanner CreatePlanner(int seed) => new(Options(), new SeededRandomSource(seed), new SearchTopicGenerator(["nature", "space", "history"]));
+
+    private static string Signature(ProposedAction action) =>
+        $"{action.Kind}|{action.Target}|{string.Join(';', action.Parameters?.OrderBy(pair => pair.Key).Select(pair => $"{pair.Key}={pair.Value}") ?? [])}";
 
     private static RunnerOptions Options() => new()
     {
