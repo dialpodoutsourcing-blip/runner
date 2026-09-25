@@ -20,6 +20,7 @@ public sealed class SessionService(RunnerOptions options) : IAsyncDisposable
     private readonly SemaphoreSlim _gate = new(1, 1);
     private SessionController? _controller;
     private BrowserAdapter? _browser;
+    private FileExplorerAdapter? _explorer;
     private CancellationTokenSource? _lifetime;
     private Task? _run;
 
@@ -40,9 +41,9 @@ public sealed class SessionService(RunnerOptions options) : IAsyncDisposable
             var focus = new WindowFocusCoordinator(new Win32WindowApi());
             var profile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GhostUserRunner", "BrowserProfile");
             _browser = new BrowserAdapter(options.AllowedDomains, profile, input, focus);
-            var explorer = new FileExplorerAdapter(options.AllowedFolderRoots, options.AllowedExtensions, options.AllowedApplications, new ShellProcessLauncher(), focus);
+            _explorer = new FileExplorerAdapter(options.AllowedFolderRoots, options.AllowedExtensions, options.AllowedApplications, new ShellProcessLauncher(), focus);
             var planner = new ActivityPlanner(options, random, new SearchTopicGenerator(["nature documentaries", "space exploration", "world history", "cooking techniques", "classical music", "technology news"]));
-            _controller = new SessionController(planner, new ActionPolicy(options), new CompositeActionExecutor(_browser, explorer));
+            _controller = new SessionController(planner, new ActionPolicy(options), new CompositeActionExecutor(_browser, _explorer));
             _lifetime = new CancellationTokenSource();
             _run = RunOwnedAsync(new(actualDuration, actualSeed), _lifetime.Token);
             return new(true, "session.started");
@@ -62,7 +63,13 @@ public sealed class SessionService(RunnerOptions options) : IAsyncDisposable
         using var monitorCancellation = CancellationTokenSource.CreateLinkedTokenSource(token);
         var monitor = new StopMonitor().MonitorAsync(() => _ = StopAsync(), monitorCancellation.Token);
         try { await _controller!.RunAsync(request, token); }
-        finally { monitorCancellation.Cancel(); try { await monitor; } catch (OperationCanceledException) { } if (_browser is not null) await _browser.DisposeAsync(); }
+        finally
+        {
+            monitorCancellation.Cancel();
+            try { await monitor; } catch (OperationCanceledException) { }
+            if (_browser is not null) await _browser.DisposeAsync();
+            if (_explorer is not null) await _explorer.DisposeAsync();
+        }
     }
 
     public async ValueTask DisposeAsync()

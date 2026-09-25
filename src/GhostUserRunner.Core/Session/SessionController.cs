@@ -5,8 +5,10 @@ using GhostUserRunner.Core.Safety;
 
 namespace GhostUserRunner.Core.Session;
 
-public sealed class SessionController(IActivityPlanner planner, IActionPolicy policy, IActionExecutor executor)
+public sealed class SessionController(IActivityPlanner planner, IActionPolicy policy, IActionExecutor executor, IActionDelay? actionDelay = null)
 {
+    private static readonly TimeSpan InterActionDelay = TimeSpan.FromSeconds(10);
+    private readonly IActionDelay _actionDelay = actionDelay ?? SystemActionDelay.Instance;
     private readonly SemaphoreSlim _transition = new(1, 1);
     private readonly object _stateLock = new();
     private readonly List<GeneratedActionEvent> _events = [];
@@ -133,6 +135,7 @@ public sealed class SessionController(IActivityPlanner planner, IActionPolicy po
                 }
                 planner.Record(outcome);
                 lock (_events) _events.Add(new(DateTimeOffset.UtcNow, sessionId, request.Seed, action.Kind, action.Target, outcome.Code));
+                await _actionDelay.WaitAsync(InterActionDelay, cancellationToken);
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }

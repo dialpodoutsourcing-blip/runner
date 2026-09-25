@@ -20,7 +20,7 @@ public sealed class FileExplorerAdapterTests : IDisposable
 
         Assert.True(outcome.Succeeded);
         Assert.Equal("explorer.exe", launcher.FileName);
-        Assert.Equal(Path.GetFullPath(_root), launcher.Argument);
+        Assert.Equal($"/separate,\"{Path.GetFullPath(_root)}\"", launcher.Argument);
     }
 
     [Fact]
@@ -54,25 +54,62 @@ public sealed class FileExplorerAdapterTests : IDisposable
     [Fact]
     public async Task RefusesInteractionWhenLaunchedWindowCannotBeFocused()
     {
-        var adapter = new FileExplorerAdapter([_root], [".txt"], [@"C:\Windows\System32\notepad.exe"], new RecordingLauncher(), new RejectingFocus());
+        var launcher = new RecordingLauncher();
+        var adapter = new FileExplorerAdapter([_root], [".txt"], [@"C:\Windows\System32\notepad.exe"], launcher, new RejectingFocus());
 
         var result = await adapter.ExecuteAsync(new(ActionKind.BrowseFolder, _root), CancellationToken.None);
 
         Assert.False(result.Succeeded);
         Assert.Equal("explorer.focus_failed", result.Code);
+        Assert.True(launcher.Process.WasClosed);
+    }
+
+    [Fact]
+    public async Task DisposalClosesAnOwnedWindow()
+    {
+        var launcher = new RecordingLauncher();
+        var adapter = new FileExplorerAdapter([_root], [".txt"], [@"C:\Windows\System32\notepad.exe"], launcher);
+        await adapter.ExecuteAsync(new(ActionKind.BrowseFolder, _root), CancellationToken.None);
+
+        await adapter.DisposeAsync();
+
+        Assert.True(launcher.Process.WasClosed);
+    }
+
+    [Fact]
+    public async Task ClosesOnlyTheWindowItLaunched()
+    {
+        var launcher = new RecordingLauncher();
+        var adapter = new FileExplorerAdapter([_root], [".txt"], [@"C:\Windows\System32\notepad.exe"], launcher);
+        await adapter.ExecuteAsync(new(ActionKind.BrowseFolder, _root), CancellationToken.None);
+
+        var result = await adapter.ExecuteAsync(new(ActionKind.CloseWindow, "owned"), CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.True(launcher.Process.WasClosed);
     }
 
     public void Dispose() => Directory.Delete(_root, true);
 
     private sealed class RecordingLauncher : IProcessLauncher
     {
+        public RecordingProcess Process { get; } = new();
         public string? FileName { get; private set; }
         public string? Argument { get; private set; }
-        public void Start(string fileName, string argument) { FileName = fileName; Argument = argument; }
+        public ILaunchedProcess Start(string fileName, string argument)
+        { FileName = fileName; Argument = argument; return Process; }
+    }
+
+    private sealed class RecordingProcess : ILaunchedProcess
+    {
+        public bool WasClosed { get; private set; }
+        public Task CloseAsync(CancellationToken cancellationToken)
+        { WasClosed = true; return Task.CompletedTask; }
     }
 
     private sealed class RejectingFocus : IWindowFocusCoordinator
     {
         public bool TryActivate(WindowTarget target) => false;
     }
+
 }

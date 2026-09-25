@@ -17,7 +17,7 @@ public sealed class EnduranceTests
             AllowedFolderRoots = [@"C:\GhostUserRunnerSafe"],
             AllowedExtensions = [".txt"],
             AllowedApplications = [@"C:\Windows\System32\notepad.exe"],
-            ActivityWeights = new Dictionary<string, double> { ["idle"] = 1, ["browserSearch"] = 3, ["youtube"] = 3 },
+            ActivityWeights = new Dictionary<string, double> { ["browserSearch"] = 3, ["youtube"] = 3 },
             RecentHistoryLimit = 100
         };
         var policy = new ActionPolicy(options);
@@ -29,6 +29,7 @@ public sealed class EnduranceTests
             for (var minute = 0; minute < 12 * 60; minute++)
             {
                 var action = planner.Next(context);
+                Assert.NotEqual(ActionKind.Idle, action.Kind);
                 Assert.True(policy.Evaluate(action, context).Allowed, $"Seed {seed}, minute {minute}, action {action}");
             }
             Assert.InRange(planner.HistoryCount, 1, options.RecentHistoryLimit);

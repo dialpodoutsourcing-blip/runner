@@ -16,15 +16,29 @@ public sealed class CompositeActionExecutorTests
         await composite.ExecuteAsync(new(ActionKind.SearchWeb, "https://example.test"), CancellationToken.None);
         await composite.ExecuteAsync(new(ActionKind.BrowseFolder, @"C:\Safe"), CancellationToken.None);
 
-        Assert.Equal(1, browser.Count);
-        Assert.Equal(1, explorer.Count);
+        Assert.Equal([ActionKind.SearchWeb, ActionKind.CloseWindow], browser.Actions);
+        Assert.Equal([ActionKind.BrowseFolder], explorer.Actions);
+    }
+
+    [Fact]
+    public async Task ClosesAndReopensBrowserAfterThreeActions()
+    {
+        var browser = new RecordingExecutor("browser");
+        var composite = new CompositeActionExecutor(browser, new RecordingExecutor("explorer"));
+
+        for (var index = 0; index < 4; index++)
+            await composite.ExecuteAsync(new(ActionKind.SearchWeb, "https://example.test"), CancellationToken.None);
+
+        Assert.Equal(
+            [ActionKind.SearchWeb, ActionKind.SearchWeb, ActionKind.SearchWeb, ActionKind.CloseWindow, ActionKind.SearchWeb],
+            browser.Actions);
     }
 
     private sealed class RecordingExecutor(string process) : IActionExecutor
     {
-        public int Count { get; private set; }
+        public List<ActionKind> Actions { get; } = [];
         public ObservedContext Observe() => new(true, process, null, null);
         public Task<ActionOutcome> ExecuteAsync(ProposedAction action, CancellationToken cancellationToken)
-        { Count++; return Task.FromResult(new ActionOutcome(true, "ok")); }
+        { Actions.Add(action.Kind); return Task.FromResult(new ActionOutcome(true, "ok")); }
     }
 }

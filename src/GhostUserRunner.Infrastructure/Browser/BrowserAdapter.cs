@@ -35,6 +35,11 @@ public sealed class BrowserAdapter : IActionExecutor, IAsyncDisposable
 
     public async Task<ActionOutcome> ExecuteAsync(ProposedAction action, CancellationToken cancellationToken)
     {
+        if (action.Kind == ActionKind.CloseWindow)
+        {
+            await CloseOwnedWindowAsync();
+            return new(true, "window.closed");
+        }
         await EnsureStartedAsync(cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         await MarkOwnedPageAsync(cancellationToken);
@@ -150,8 +155,16 @@ public sealed class BrowserAdapter : IActionExecutor, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await CloseOwnedWindowAsync();
+    }
+
+    private async Task CloseOwnedWindowAsync()
+    {
         if (_context is not null) await _context.CloseAsync();
         _playwright?.Dispose();
+        _page = null;
+        _context = null;
+        _playwright = null;
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool GetCursorPos(out System.Drawing.Point point);

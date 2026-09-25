@@ -43,7 +43,7 @@ public sealed class ActivityPlanner : IActivityPlanner
 
     private static bool IsEligible(string name, ObservedContext context) => name switch
     {
-        "idle" => true,
+        "idle" => false,
         "browserSearch" or "youtube" => context.ProcessName.Contains("browser", StringComparison.OrdinalIgnoreCase),
         "fileExplorer" => true,
         _ => false
@@ -62,10 +62,9 @@ public sealed class ActivityPlanner : IActivityPlanner
 
     private ProposedAction CreateAction(string category)
     {
-        var topic = category == "idle" ? string.Empty : Uri.EscapeDataString(_topics.Next(_random));
+        var topic = Uri.EscapeDataString(_topics.Next(_random));
         return category switch
         {
-            "idle" => new(ActionKind.Idle, "idle"),
             "browserSearch" => new(ActionKind.SearchWeb, $"https://www.google.com/search?q={topic}"),
             "youtube" => new(ActionKind.WatchVideo, $"https://www.youtube.com/results?search_query={topic}"),
             "fileExplorer" => CreateFileAction(),

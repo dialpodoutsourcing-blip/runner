@@ -21,11 +21,11 @@ public sealed class ActivityPlannerTests
     }
 
     [Fact]
-    public void ZeroWeightCategoryIsNeverSelectedAndHistoryIsBounded()
+    public void IdleCategoryIsNeverSelectedAndHistoryIsBounded()
     {
         var options = Options() with
         {
-            ActivityWeights = new Dictionary<string, double> { ["idle"] = 1, ["youtube"] = 0 },
+            ActivityWeights = new Dictionary<string, double> { ["idle"] = 100, ["browserSearch"] = 1, ["youtube"] = 0 },
             RecentHistoryLimit = 10
         };
         var planner = new ActivityPlanner(options, new SeededRandomSource(9), new SearchTopicGenerator(["nature"]));
@@ -33,7 +33,7 @@ public sealed class ActivityPlannerTests
 
         var actions = Enumerable.Range(0, 100).Select(_ => planner.Next(context)).ToArray();
 
-        Assert.All(actions, action => Assert.Equal(ActionKind.Idle, action.Kind));
+        Assert.All(actions, action => Assert.Equal(ActionKind.SearchWeb, action.Kind));
         Assert.Equal(10, planner.HistoryCount);
     }
 
@@ -75,7 +75,6 @@ public sealed class ActivityPlannerTests
     [Theory]
     [InlineData(ActionKind.WatchVideo, 30, 180)]
     [InlineData(ActionKind.SearchWeb, 3, 15)]
-    [InlineData(ActionKind.Idle, 2, 30)]
     public void ActivityDwellTimesStayInsideHumanRanges(ActionKind kind, int minimumSeconds, int maximumSeconds)
     {
         var delay = ActivityDwellTime.Choose(kind, new SeededRandomSource(5));
@@ -85,7 +84,6 @@ public sealed class ActivityPlannerTests
     [Theory]
     [InlineData(ActionKind.WatchVideo)]
     [InlineData(ActionKind.SearchWeb)]
-    [InlineData(ActionKind.Idle)]
     public void EveryGeneratedDwellIsAtMostFortySeconds(ActionKind kind)
     {
         for (var seed = 0; seed < 100; seed++)
@@ -100,7 +98,7 @@ public sealed class ActivityPlannerTests
         AllowedFolderRoots = [@"C:\GhostUserRunnerSafe"],
         AllowedExtensions = [".txt"],
         AllowedApplications = [@"C:\Windows\System32\notepad.exe"],
-        ActivityWeights = new Dictionary<string, double> { ["idle"] = 1, ["browserSearch"] = 2, ["youtube"] = 2 },
+        ActivityWeights = new Dictionary<string, double> { ["browserSearch"] = 2, ["youtube"] = 2 },
         RecentHistoryLimit = 25
     };
 }
