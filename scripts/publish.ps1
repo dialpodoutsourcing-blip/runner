@@ -11,6 +11,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Tests failed; package was not created.' }
 & $dotnet publish (Join-Path $projectRoot 'src\GhostUserRunner.App\GhostUserRunner.App.csproj') -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o $output
 if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
 
+New-Item -ItemType Directory -Path (Join-Path $output 'SafeFiles') -Force | Out-Null
+
 $env:PLAYWRIGHT_BROWSERS_PATH = '0'
 & (Join-Path $output 'playwright.ps1') install chromium
 if ($LASTEXITCODE -ne 0) { throw 'Chromium installation failed.' }

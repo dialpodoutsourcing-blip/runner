@@ -4,7 +4,7 @@ using GhostUserRunner.Core.Configuration;
 
 var configPath = Path.Combine(AppContext.BaseDirectory, "config", "appsettings.json");
 if (!File.Exists(configPath)) throw new FileNotFoundException("Missing config/appsettings.json", configPath);
-var options = RunnerOptionsLoader.LoadFile(configPath);
+var options = RunnerOptionsPathResolver.Resolve(RunnerOptionsLoader.LoadFile(configPath), AppContext.BaseDirectory);
 var validation = OptionsValidator.Validate(options);
 if (!validation.IsValid) throw new InvalidDataException(string.Join(Environment.NewLine, validation.Errors.Select(error => error.Message)));
 var builder = WebApplication.CreateBuilder(args);

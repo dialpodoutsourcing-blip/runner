@@ -34,4 +34,28 @@ public sealed class RunnerStartupTests
         Assert.Equal("https://www.youtube.com", Assert.Single(options.AllowedDomains));
         Assert.True(OptionsValidator.Validate(options).IsValid);
     }
+
+    [Fact]
+    public void ResolvesAppDirectoryFolderRootBeforeValidation()
+    {
+        const string json = """
+        {
+          "allowedDomains": ["https://www.youtube.com"],
+          "allowedFolderRoots": ["{AppDirectory}\\SafeFiles"],
+          "allowedExtensions": [".txt"],
+          "allowedApplications": ["C:\\Windows\\System32\\notepad.exe"],
+          "activityWeights": { "browser": 1 },
+          "recentHistoryLimit": 100
+        }
+        """;
+        var installDirectory = Path.Combine(Path.GetTempPath(), "GhostUserRunner-install");
+
+        var options = RunnerOptionsPathResolver.Resolve(
+            RunnerOptionsLoader.Load(json), installDirectory);
+
+        Assert.Equal(
+            Path.Combine(installDirectory, "SafeFiles"),
+            Assert.Single(options.AllowedFolderRoots));
+        Assert.True(OptionsValidator.Validate(options).IsValid);
+    }
 }

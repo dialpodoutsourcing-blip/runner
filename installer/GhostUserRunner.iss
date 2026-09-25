@@ -21,6 +21,9 @@ ArchitecturesAllowed=x64compatible
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+[Dirs]
+Name: "{app}\SafeFiles"
+
 [Icons]
 Name: "{autoprograms}\{#AppName}"; Filename: "{app}\GhostUserRunner.App.exe"
 Name: "{userstartup}\{#AppName} Agent"; Filename: "{app}\GhostUserRunner.App.exe"; Parameters: "--background"; WorkingDir: "{app}"
