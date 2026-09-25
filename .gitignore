@@ -1,0 +1,23 @@
+# Build outputs
+**/bin/
+**/obj/
+artifacts/
+
+# Local SDKs, browser downloads, and execution scratch
+.tools/
+.superpowers/
+.playwright/
+
+# IDE and operating-system files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
+
+# Runtime state
+logs/
+BrowserProfile/
+*.log
